@@ -82,6 +82,10 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     open func handleURLTap(_ handler: @escaping (URL) -> ()) {
         urlTapHandler = handler
     }
+    
+    open func handleOtherTap(_ handler: @escaping () -> ()) {
+        otherTapHandler = handler
+    }
 
     open func handleCustomTap(for type: ActiveType, handler: @escaping (String) -> ()) {
         customTapHandlers[type] = handler
@@ -206,7 +210,10 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
                 selectedElement = nil
             }
         case .ended:
-            guard let selectedElement = selectedElement else { return avoidSuperCall }
+            guard let selectedElement = selectedElement else {
+                didTapOther()
+                return avoidSuperCall
+            }
 
             switch selectedElement.element {
             case .mention(let userHandle): didTapMention(userHandle)
@@ -238,6 +245,7 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
     internal var mentionTapHandler: ((String) -> ())?
     internal var hashtagTapHandler: ((String) -> ())?
     internal var urlTapHandler: ((URL) -> ())?
+    internal var otherTapHandler: (() -> ())?
     internal var customTapHandlers: [ActiveType : ((String) -> ())] = [:]
     
     fileprivate var mentionFilterPredicate: ((String) -> Bool)?
@@ -486,6 +494,12 @@ typealias ElementTuple = (range: NSRange, element: ActiveElement, type: ActiveTy
             return
         }
         mentionHandler(username)
+    }
+    fileprivate func didTapOther() {
+        guard let otherTapHandler = otherTapHandler else {
+            return
+        }
+        otherTapHandler()
     }
 
     fileprivate func didTapHashtag(_ hashtag: String) {
